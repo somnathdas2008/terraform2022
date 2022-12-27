@@ -5,11 +5,11 @@ provider "aws" {
 
 # Create SSH Key / PEM 
 resource "tls_private_key" "generated" {
-algorithm = "RSA"
+  algorithm = "RSA"
 }
 resource "local_file" "private_key_pem" {
-content = tls_private_key.generated.private_key_pem
-filename = "MyAWSKey.pem"
+  content  = tls_private_key.generated.private_key_pem
+  filename = "MyAWSKey.pem"
 }
 
 #Retrieve the list of AZs in the current AWS region
@@ -233,5 +233,40 @@ resource "aws_instance" "ubuntu_server" {
   lifecycle {
     ignore_changes = [security_groups]
   }
+}
+
+#Terraform Modules
+module "server" {
+  source    = "./server"
+  ami       = data.aws_ami.ubuntu.id
+  subnet_id = aws_subnet.public_subnets["public_subnet_3"].id
+  security_groups = [
+    aws_security_group.vpc-ping.id,
+    aws_security_group.ingress-ssh.id,
+    aws_security_group.vpc-web.id
+  ]
+}
+output "public_ip" {
+  value = module.server.public_ip
+}
+output "public_dns" {
+  value = module.server.public_dns
+}
+
+module "server_subnet_1" {
+  source    = "./server"
+  ami       = data.aws_ami.ubuntu.id
+  subnet_id = aws_subnet.public_subnets["public_subnet_1"].id
+  security_groups = [
+    aws_security_group.vpc-ping.id,
+    aws_security_group.ingress-ssh.id,
+    aws_security_group.vpc-web.id
+  ]
+}
+output "public_ip_server_subnet_1" {
+  value = module.server_subnet_1.public_ip
+}
+output "public_dns_server_subnet_1" {
+  value = module.server_subnet_1.public_dns
 }
 
